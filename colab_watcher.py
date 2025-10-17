@@ -4,6 +4,7 @@ ROOT = pathlib.Path('/content/drive/MyDrive/M4L-Demucs')
 JOBS = ROOT / 'jobs'
 AUDIO = JOBS / 'audio'
 OUT   = ROOT / 'out'
+CONFIG = ROOT / 'config.json'
 
 for p in [ROOT, JOBS, AUDIO, OUT]:
     p.mkdir(parents=True, exist_ok=True)
@@ -123,6 +124,15 @@ def watch_loop():
     print(f'Watching {JOBS} ...')
     while True:
         try:
+            # Read config (zero-config default disabled)
+            zero_config = False
+            try:
+                if CONFIG.exists():
+                    cfg = json.loads(CONFIG.read_text() or '{}')
+                    zero_config = bool(cfg.get('zero_config', False))
+            except Exception:
+                zero_config = False
+
             # 1) Process explicit JSON jobs
             for job_json in sorted(JOBS.glob('*.json')):
                 jid = job_json.stem
@@ -133,21 +143,22 @@ def watch_loop():
                 # optional: remove job_json after processing
                 # job_json.unlink(missing_ok=True)
 
-            # 2) Zero-config: process any new audio dropped into jobs/audio without JSON
-            for audio_path in sorted(AUDIO.glob('*')):
-                if not audio_path.is_file():
-                    continue
-                if audio_path.suffix.lower() not in {'.wav', '.flac', '.mp3', '.m4a', '.ogg'}:
-                    continue
-                jid = audio_path.stem
-                stem_dir = OUT / jid
-                # Skip if already processed
-                if (stem_dir / 'done.json').exists():
-                    continue
-                # Skip if a JSON job exists for this id
-                if (JOBS / f'{jid}.json').exists():
-                    continue
-                process_audio_file(audio_path)
+            # 2) Optional zero-config: process any new audio dropped without JSON
+            if zero_config:
+                for audio_path in sorted(AUDIO.glob('*')):
+                    if not audio_path.is_file():
+                        continue
+                    if audio_path.suffix.lower() not in {'.wav', '.flac', '.mp3', '.m4a', '.ogg'}:
+                        continue
+                    jid = audio_path.stem
+                    stem_dir = OUT / jid
+                    # Skip if already processed
+                    if (stem_dir / 'done.json').exists():
+                        continue
+                    # Skip if a JSON job exists for this id
+                    if (JOBS / f'{jid}.json').exists():
+                        continue
+                    process_audio_file(audio_path)
         except Exception as e:
             print('Watcher error:', e)
         time.sleep(2)

@@ -24,6 +24,43 @@ Quick Watcher (one click):
 
 [![Run Watcher in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/VSTOPIA/Doctor-Sample-Unit-DSU/blob/main/notebooks/DSU_Watcher_OneClick.ipynb)
 
+## Workflows
+
+### A) Precise by filename (recommended)
+You control exactly which file runs and with what options by creating a small JSON job next to your audio.
+
+1. Put your audio in Drive: `MyDrive/M4L-Demucs/jobs/audio/YourSong.wav`
+2. Create `MyDrive/M4L-Demucs/jobs/YourSong.json` with options:
+```
+{
+  "id": "YourSong",              // must match audio filename (without extension)
+  "model": "htdemucs_ft",        // or htdemucs
+  "two_stems": "vocals",         // vocals -> outputs vocals + instrumental
+  "jobs": 4,                      // parallelism
+  "shifts": 4,                    // quality (higher = slower)
+  "segments": 0,                  // 0 for full file; set >0 to segment
+  "clip_mode": "rescale"         // or "clamp"
+}
+```
+3. Run the Watcher notebook. Results will appear in: `MyDrive/M4L-Demucs/out/YourSong/`
+
+This method is best when you want to decide by name and manage multiple jobs.
+
+### B) Drop‑and‑go (optional)
+If you prefer not to write JSON jobs, enable zero‑config mode and just drop audio files.
+
+1. In Drive, create `MyDrive/M4L-Demucs/config.json`:
+```
+{ "zero_config": true }
+```
+2. Drop files into `MyDrive/M4L-Demucs/jobs/audio/`. Each file will be processed with defaults:
+   - model: `htdemucs_ft`
+   - two_stems: `vocals` (vocals + instrumental)
+   - jobs: 4, shifts: 4, segments: 0, clip_mode: rescale
+3. Results appear in `MyDrive/M4L-Demucs/out/<filename>/`
+
+This method is simplest for non‑technical users; turn it off by removing `config.json` or setting `zero_config` to false.
+
 ⚙️ System Requirements
 - Ableton Live 11+ with Max 8
 - macOS/Windows 10+
