@@ -1,0 +1,24 @@
+# Node
+node_modules/
+*.log
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# Build artifacts
+/dist/
+/build/
+
+# Data
+M4L-Demucs/
+*.wav
+*.aiff
+*.flac
+*.mp3
+
+# Secrets
+.env
