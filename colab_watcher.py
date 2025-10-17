@@ -71,8 +71,10 @@ def process_job(job_path: pathlib.Path):
     in_wav = AUDIO / f'{jid}.wav'
     stem_dir = OUT / jid
 
+    print(f"[Watcher] QUEUED job {jid}")
     write_status(jid, status='queued')
     try:
+        print(f"[Watcher] RUN job {jid} using model={job.get('model','htdemucs')} two_stems={job.get('two_stems','')} jobs={job.get('jobs',2)}")
         write_status(jid, status='running', phase='prepare')
         for phase, logline in run_demucs(
             in_wav,
@@ -97,10 +99,12 @@ def process_job(job_path: pathlib.Path):
         except Exception as _e:
             pass
         (stem_dir / 'done.json').write_text(json.dumps({'status': 'done'}))
+        print(f"[Watcher] DONE job {jid}")
         write_status(jid, status='done', phase='complete')
     except Exception as e:
         err = f'{type(e).__name__}: {e}'
         (stem_dir / 'done.json').write_text(json.dumps({'status': 'error', 'error': err}))
+        print(f"[Watcher] ERROR job {jid}: {err}")
         write_status(jid, status='error', error=err, trace=traceback.format_exc())
 
 def process_audio_file(audio_path: pathlib.Path):
@@ -109,6 +113,7 @@ def process_audio_file(audio_path: pathlib.Path):
     """
     jid = audio_path.stem
     stem_dir = OUT / jid
+    print(f"[Watcher] QUEUED file {audio_path.name}")
     write_status(jid, status='queued')
     try:
         # Defaults: quality-focused, 2 stems (vocals + instrumental)
@@ -120,6 +125,7 @@ def process_audio_file(audio_path: pathlib.Path):
             'segments': 0,
             'clip_mode': 'rescale',
         }
+        print(f"[Watcher] RUN file {audio_path.name} model={defaults['model']} two_stems={defaults['two_stems']} jobs={defaults['jobs']}")
         write_status(jid, status='running', phase='prepare')
         for phase, logline in run_demucs(
             audio_path,
@@ -143,10 +149,12 @@ def process_audio_file(audio_path: pathlib.Path):
         except Exception as _e:
             pass
         (stem_dir / 'done.json').write_text(json.dumps({'status': 'done'}))
+        print(f"[Watcher] DONE file {audio_path.name}")
         write_status(jid, status='done', phase='complete')
     except Exception as e:
         err = f'{type(e).__name__}: {e}'
         (stem_dir / 'done.json').write_text(json.dumps({'status': 'error', 'error': err}))
+        print(f"[Watcher] ERROR file {audio_path.name}: {err}")
         write_status(jid, status='error', error=err, trace=traceback.format_exc())
 
 def watch_loop():
