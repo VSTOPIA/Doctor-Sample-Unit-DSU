@@ -36,7 +36,8 @@ def write_status(job_id, **kw):
     (sd / 'status.json').write_text(json.dumps(kw))
 
 def run_demucs(in_wav, out_dir, model='htdemucs', two_stems='', jobs=2, shifts=0, segments=0, clip_mode='rescale'):
-    cmd = [sys.executable, '-m', 'demucs.separate', '-n', model, '-o', str(out_dir)]
+    # Force CUDA device on Colab GPU runtimes for best performance
+    cmd = [sys.executable, '-m', 'demucs.separate', '-n', model, '-d', 'cuda', '-o', str(out_dir)]
     if two_stems:
         cmd += ['--two-stems', two_stems]
     if isinstance(jobs, int) and jobs > 0:
@@ -50,8 +51,11 @@ def run_demucs(in_wav, out_dir, model='htdemucs', two_stems='', jobs=2, shifts=0
     cmd.append(str(in_wav))
 
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+    last_line = ''
     for line in proc.stdout:
         line = line.rstrip('\n')
+        if line:
+            last_line = line
         if 'Separating' in line:
             phase = 'separate'
         elif 'Loaded' in line or 'Using' in line:
@@ -63,7 +67,8 @@ def run_demucs(in_wav, out_dir, model='htdemucs', two_stems='', jobs=2, shifts=0
         yield phase, line
     proc.wait()
     if proc.returncode != 0:
-        raise RuntimeError('Demucs failed')
+        # Surface the last log line to upper layers for status.json
+        raise RuntimeError(f'Demucs failed: {last_line}')
 
 def process_job(job_path: pathlib.Path):
     job = json.loads(job_path.read_text())
