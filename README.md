@@ -16,7 +16,9 @@ Doctor Sample Unit is a Max for Live device by Ostin Solo for capturing audio, s
 
 📘 Colab Quickstart
 
-See COLAB.md for copy-paste Colab cells (Drive mount, install, one-shot, watcher).
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/VSTOPIA/Doctor-Sample-Unit-DSU/blob/main/notebooks/DSU_Colab.ipynb)
+
+See COLAB.md for copy-paste cells (Drive mount, install, one-shot, watcher).
 
 ⚙️ System Requirements
 - Ableton Live 11+ with Max 8
