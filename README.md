@@ -14,7 +14,11 @@ Doctor Sample Unit is a Max for Live device by Ostin Solo for capturing audio, s
 - Google Colab + Drive (optional GPU)
 - FFmpeg / yt-dlp
 
-## System Requirements
+📘 Colab Quickstart
+
+See COLAB.md for copy-paste Colab cells (Drive mount, install, one-shot, watcher).
+
+⚙️ System Requirements
 - Ableton Live 11+ with Max 8
 - macOS/Windows 10+
 - Python 3.9+ (for local processing)
