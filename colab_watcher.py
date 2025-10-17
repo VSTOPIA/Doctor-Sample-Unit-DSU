@@ -124,14 +124,14 @@ def watch_loop():
     print(f'Watching {JOBS} ...')
     while True:
         try:
-            # Read config (zero-config default disabled)
-            zero_config = False
+            # Read config (zero-config default enabled for simplicity)
+            zero_config = True
             try:
                 if CONFIG.exists():
                     cfg = json.loads(CONFIG.read_text() or '{}')
                     zero_config = bool(cfg.get('zero_config', False))
             except Exception:
-                zero_config = False
+                zero_config = True
 
             # 1) Process explicit JSON jobs
             for job_json in sorted(JOBS.glob('*.json')):

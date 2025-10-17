@@ -14,15 +14,11 @@ Doctor Sample Unit is a Max for Live device by Ostin Solo for capturing audio, s
 - Google Colab + Drive (optional GPU)
 - FFmpeg / yt-dlp
 
-📘 Colab Quickstart
+📘 Colab Quickstart (one click)
 
-[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/VSTOPIA/Doctor-Sample-Unit-DSU/blob/main/notebooks/DSU_Colab.ipynb)
+[![Open DSU Worker in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/VSTOPIA/Doctor-Sample-Unit-DSU/blob/main/notebooks/M4L_Demucs_Worker.ipynb)
 
-See COLAB.md for copy-paste cells (Drive mount, install, one-shot, watcher).
-
-Quick Watcher (one click):
-
-[![Run Watcher in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/VSTOPIA/Doctor-Sample-Unit-DSU/blob/main/notebooks/DSU_Watcher_OneClick.ipynb)
+Click the badge, Run all → the watcher mounts Drive, installs pinned versions, and starts. Drop audio into `MyDrive/M4L-Demucs/jobs/audio/`.
 
 ## Workflows
 
@@ -46,12 +42,12 @@ You control exactly which file runs and with what options by creating a small JS
 
 This method is best when you want to decide by name and manage multiple jobs.
 
-### B) Drop‑and‑go (optional)
-If you prefer not to write JSON jobs, enable zero‑config mode and just drop audio files.
+### B) Drop‑and‑go (default)
+Zero‑config is enabled by default. Just drop audio files and they are processed with defaults.
 
 1. In Drive, create `MyDrive/M4L-Demucs/config.json`:
 ```
-{ "zero_config": true }
+{ "zero_config": false }
 ```
 2. Drop files into `MyDrive/M4L-Demucs/jobs/audio/`. Each file will be processed with defaults:
    - model: `htdemucs_ft`
@@ -59,7 +55,9 @@ If you prefer not to write JSON jobs, enable zero‑config mode and just drop au
    - jobs: 4, shifts: 4, segments: 0, clip_mode: rescale
 3. Results appear in `MyDrive/M4L-Demucs/out/<filename>/`
 
-This method is simplest for non‑technical users; turn it off by removing `config.json` or setting `zero_config` to false.
+Turn it off by creating `config.json` with `{ "zero_config": false }`.
+
+Note: This project does not bundle Google Drive. Users install Drive for Desktop and run Colab under their own Google account.
 
 ⚙️ System Requirements
 - Ableton Live 11+ with Max 8
