@@ -15,7 +15,7 @@ def beat():
         try:
             HEARTBEAT.write_text(json.dumps({
                 'alive': True,
-                'ts': datetime.datetime.utcnow().isoformat() + 'Z'
+                'ts': datetime.datetime.now(datetime.timezone.utc).isoformat()
             }))
         except Exception:
             pass
@@ -83,10 +83,47 @@ def process_job(job_path: pathlib.Path):
         (stem_dir / 'done.json').write_text(json.dumps({'status': 'error', 'error': err}))
         write_status(jid, status='error', error=err, trace=traceback.format_exc())
 
+def process_audio_file(audio_path: pathlib.Path):
+    """Zero-config path: process a dropped audio file with defaults.
+    Job id = filename stem. Writes status/done files into out/<id>/.
+    """
+    jid = audio_path.stem
+    stem_dir = OUT / jid
+    write_status(jid, status='queued')
+    try:
+        # Defaults: quality-focused, 2 stems (vocals + instrumental)
+        defaults = {
+            'model': 'htdemucs_ft',
+            'two_stems': 'vocals',
+            'jobs': 4,
+            'shifts': 4,
+            'segments': 0,
+            'clip_mode': 'rescale',
+        }
+        write_status(jid, status='running', phase='prepare')
+        for phase, logline in run_demucs(
+            audio_path,
+            stem_dir,
+            model=defaults['model'],
+            two_stems=defaults['two_stems'],
+            jobs=defaults['jobs'],
+            shifts=defaults['shifts'],
+            segments=defaults['segments'],
+            clip_mode=defaults['clip_mode'],
+        ):
+            write_status(jid, status='running', phase=phase, log=logline)
+        (stem_dir / 'done.json').write_text(json.dumps({'status': 'done'}))
+        write_status(jid, status='done', phase='complete')
+    except Exception as e:
+        err = f'{type(e).__name__}: {e}'
+        (stem_dir / 'done.json').write_text(json.dumps({'status': 'error', 'error': err}))
+        write_status(jid, status='error', error=err, trace=traceback.format_exc())
+
 def watch_loop():
     print(f'Watching {JOBS} ...')
     while True:
         try:
+            # 1) Process explicit JSON jobs
             for job_json in sorted(JOBS.glob('*.json')):
                 jid = job_json.stem
                 stem_dir = OUT / jid
@@ -95,6 +132,22 @@ def watch_loop():
                 process_job(job_json)
                 # optional: remove job_json after processing
                 # job_json.unlink(missing_ok=True)
+
+            # 2) Zero-config: process any new audio dropped into jobs/audio without JSON
+            for audio_path in sorted(AUDIO.glob('*')):
+                if not audio_path.is_file():
+                    continue
+                if audio_path.suffix.lower() not in {'.wav', '.flac', '.mp3', '.m4a', '.ogg'}:
+                    continue
+                jid = audio_path.stem
+                stem_dir = OUT / jid
+                # Skip if already processed
+                if (stem_dir / 'done.json').exists():
+                    continue
+                # Skip if a JSON job exists for this id
+                if (JOBS / f'{jid}.json').exists():
+                    continue
+                process_audio_file(audio_path)
         except Exception as e:
             print('Watcher error:', e)
         time.sleep(2)
