@@ -1,4 +1,5 @@
 import json, time, pathlib, threading, datetime, subprocess, traceback, os, sys
+import shutil
 
 ROOT = pathlib.Path('/content/drive/MyDrive/M4L-Demucs')
 SITE = ROOT / '.venv' / 'site-packages'
@@ -84,6 +85,17 @@ def process_job(job_path: pathlib.Path):
             clip_mode=job.get('clip_mode', 'rescale'),
         ):
             write_status(jid, status='running', phase=phase, log=logline)
+        # Flatten Demucs output: copy stems from separated/<model>/<jid>/ into out/<jid>/
+        try:
+            model = job.get('model', 'htdemucs')
+            src_dir = stem_dir / 'separated' / model / jid
+            if src_dir.exists():
+                for name in os.listdir(src_dir):
+                    src = src_dir / name
+                    if src.is_file():
+                        shutil.copy2(src, stem_dir / name)
+        except Exception as _e:
+            pass
         (stem_dir / 'done.json').write_text(json.dumps({'status': 'done'}))
         write_status(jid, status='done', phase='complete')
     except Exception as e:
@@ -120,6 +132,16 @@ def process_audio_file(audio_path: pathlib.Path):
             clip_mode=defaults['clip_mode'],
         ):
             write_status(jid, status='running', phase=phase, log=logline)
+        # Flatten Demucs output into out/<jid>/
+        try:
+            src_dir = stem_dir / 'separated' / defaults['model'] / jid
+            if src_dir.exists():
+                for name in os.listdir(src_dir):
+                    src = src_dir / name
+                    if src.is_file():
+                        shutil.copy2(src, stem_dir / name)
+        except Exception as _e:
+            pass
         (stem_dir / 'done.json').write_text(json.dumps({'status': 'done'}))
         write_status(jid, status='done', phase='complete')
     except Exception as e:
