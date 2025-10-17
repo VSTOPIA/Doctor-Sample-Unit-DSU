@@ -1,6 +1,13 @@
 import json, time, pathlib, threading, datetime, subprocess, traceback, os, sys
 
 ROOT = pathlib.Path('/content/drive/MyDrive/M4L-Demucs')
+SITE = ROOT / '.venv' / 'site-packages'
+MODEL_CACHE = ROOT / 'model-cache'
+os.environ.setdefault('XDG_CACHE_HOME', str(MODEL_CACHE))
+os.environ.setdefault('DEMUCS_CACHE', str(MODEL_CACHE))
+if SITE.exists():
+    if str(SITE) not in sys.path:
+        sys.path.insert(0, str(SITE))
 JOBS = ROOT / 'jobs'
 AUDIO = JOBS / 'audio'
 OUT   = ROOT / 'out'
