@@ -50,7 +50,14 @@ def run_demucs(in_wav, out_dir, model='htdemucs', two_stems='', jobs=2, shifts=0
         cmd += ['--clip-mode', clip_mode]
     cmd.append(str(in_wav))
 
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+    # Ensure the child Python sees Drive-installed site-packages
+    child_env = os.environ.copy()
+    try:
+        site_dir = str((ROOT / '.venv' / 'site-packages'))
+        child_env['PYTHONPATH'] = (site_dir + os.pathsep + child_env.get('PYTHONPATH', ''))
+    except Exception:
+        pass
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, env=child_env)
     last_line = ''
     for line in proc.stdout:
         line = line.rstrip('\n')
