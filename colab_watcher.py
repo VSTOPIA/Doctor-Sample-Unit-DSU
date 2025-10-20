@@ -1,4 +1,4 @@
-import json, time, pathlib, threading, datetime, subprocess, traceback, os, sys
+import json, time, pathlib, threading, datetime, subprocess, traceback, os, sys, urllib.request
 import shutil
 
 # Allow overriding the root (e.g., Kaggle). Defaults to Colab MyDrive.
@@ -19,6 +19,7 @@ for p in [ROOT, JOBS, AUDIO, OUT]:
     p.mkdir(parents=True, exist_ok=True)
 
 HEARTBEAT = ROOT / 'heartbeat.json'
+REMOTE_JOBS_URL = os.environ.get('DSU_REMOTE_JOBS_URL')
 
 def beat():
     while True:
@@ -35,6 +36,30 @@ def write_status(job_id, **kw):
     sd = OUT / job_id
     sd.mkdir(parents=True, exist_ok=True)
     (sd / 'status.json').write_text(json.dumps(kw))
+
+def download_input_if_needed(jid: str, job: dict):
+    dest = AUDIO / f'{jid}.wav'
+    if dest.exists():
+        return
+    url = job.get('source_url')
+    gdrive_id = job.get('gdrive_id')
+    if url:
+        try:
+            cmd = ['curl', '-L', '-o', str(dest), url]
+            subprocess.check_call(cmd)
+            return
+        except Exception as _e:
+            pass
+    if gdrive_id:
+        # Try gdown if available
+        try:
+            cmd = ['gdown', '--id', gdrive_id, '-O', str(dest)]
+            subprocess.check_call(cmd)
+            return
+        except Exception as _e:
+            pass
+    if not dest.exists():
+        raise RuntimeError('Input WAV missing and no valid source_url/gdrive_id to fetch it')
 
 def run_demucs(in_wav, out_dir, model='htdemucs', two_stems='', jobs=2, shifts=0, segments=0, clip_mode='rescale'):
     # Force CUDA device on Colab GPU runtimes for best performance
@@ -88,6 +113,15 @@ def process_job(job_path: pathlib.Path):
     write_status(jid, status='queued')
     try:
         print(f"[Watcher] RUN job {jid} using model={job.get('model','htdemucs')} two_stems={job.get('two_stems','')} jobs={job.get('jobs',2)}")
+        # Ensure input exists; if not, download using provided source_url/gdrive_id
+        try:
+            download_input_if_needed(jid, job)
+        except Exception as fetch_err:
+            err = f'{type(fetch_err).__name__}: {fetch_err}'
+            (stem_dir / 'done.json').write_text(json.dumps({'status': 'error', 'error': err}))
+            print(f"[Watcher] ERROR job {jid}: {err}")
+            write_status(jid, status='error', error=err, trace=traceback.format_exc())
+            return
         write_status(jid, status='running', phase='prepare')
         for phase, logline in run_demucs(
             in_wav,
@@ -174,6 +208,39 @@ def watch_loop():
     print(f'Watching {JOBS} ...')
     while True:
         try:
+            # Pull remote jobs if configured
+            if REMOTE_JOBS_URL:
+                try:
+                    with urllib.request.urlopen(REMOTE_JOBS_URL, timeout=5) as resp:
+                        payload = resp.read().decode('utf-8')
+                    items = []
+                    txt = (payload or '').strip()
+                    if txt.startswith('['):
+                        items = json.loads(txt)
+                    else:
+                        for line in txt.splitlines():
+                            line = line.strip()
+                            if not line:
+                                continue
+                            try:
+                                items.append(json.loads(line))
+                            except Exception:
+                                continue
+                    for job in items:
+                        jid = str(job.get('id') or '').strip()
+                        if not jid:
+                            continue
+                        stem_dir = OUT / jid
+                        if (stem_dir / 'done.json').exists():
+                            continue
+                        job_path = JOBS / f'{jid}.json'
+                        if not job_path.exists():
+                            try:
+                                job_path.write_text(json.dumps(job))
+                            except Exception:
+                                pass
+                except Exception:
+                    pass
             # Read config (zero-config default enabled for simplicity)
             zero_config = True
             try:
