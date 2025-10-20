@@ -26,6 +26,8 @@ Open on Kaggle and Run all:
 - Upload your audio to `/kaggle/working/M4L-Demucs/jobs/audio/`
 - Watcher runs with `DSU_ROOT=/kaggle/working/M4L-Demucs`
 
+[![Open in Kaggle](https://img.shields.io/badge/Open%20in-Kaggle-20BEFF?logo=kaggle&logoColor=white)](https://www.kaggle.com/kernels/welcome?src=https://raw.githubusercontent.com/VSTOPIA/Doctor-Sample-Unit-DSU/main/notebooks/Kaggle_DSU_Worker.ipynb)
+
 
 ## Workflows
 
