@@ -40,21 +40,44 @@ def write_status(job_id, **kw):
 def download_input_if_needed(jid: str, job: dict):
     dest = AUDIO / f'{jid}.wav'
     if dest.exists():
+        # If already present and notify_url is provided, best-effort notify
+        try:
+            notify = job.get('notify_url')
+            if notify:
+                urllib.request.urlopen(notify, timeout=2).read(0)
+        except Exception:
+            pass
         return
     url = job.get('source_url')
     gdrive_id = job.get('gdrive_id')
     if url:
         try:
+            print(f"[Watcher] FETCH {jid} from source_url {url}")
             cmd = ['curl', '-L', '-o', str(dest), url]
             subprocess.check_call(cmd)
+            print(f"[Watcher] FETCH OK {jid} -> {dest}")
+            try:
+                notify = job.get('notify_url')
+                if notify:
+                    urllib.request.urlopen(notify, timeout=2).read(0)
+            except Exception:
+                pass
             return
         except Exception as _e:
             pass
     if gdrive_id:
         # Try gdown if available
         try:
+            print(f"[Watcher] FETCH {jid} from gdrive_id {gdrive_id}")
             cmd = ['gdown', '--id', gdrive_id, '-O', str(dest)]
             subprocess.check_call(cmd)
+            print(f"[Watcher] FETCH OK {jid} -> {dest}")
+            try:
+                notify = job.get('notify_url')
+                if notify:
+                    urllib.request.urlopen(notify, timeout=2).read(0)
+            except Exception:
+                pass
             return
         except Exception as _e:
             pass
@@ -211,8 +234,11 @@ def watch_loop():
             # Pull remote jobs if configured
             if REMOTE_JOBS_URL:
                 try:
-                    with urllib.request.urlopen(REMOTE_JOBS_URL, timeout=5) as resp:
+                    ts = int(time.time())
+                    url = REMOTE_JOBS_URL + ('&' if '?' in REMOTE_JOBS_URL else '?') + f'_ts={ts}'
+                    with urllib.request.urlopen(url, timeout=5) as resp:
                         payload = resp.read().decode('utf-8')
+                    print(f"[Watcher] REMOTE poll url={url} bytes={len(payload or '')}")
                     items = []
                     txt = (payload or '').strip()
                     if txt.startswith('['):
@@ -226,17 +252,20 @@ def watch_loop():
                                 items.append(json.loads(line))
                             except Exception:
                                 continue
+                    print(f"[Watcher] REMOTE items={len(items)}")
                     for job in items:
                         jid = str(job.get('id') or '').strip()
                         if not jid:
                             continue
                         stem_dir = OUT / jid
                         if (stem_dir / 'done.json').exists():
+                            # Already done; skip
                             continue
                         job_path = JOBS / f'{jid}.json'
                         if not job_path.exists():
                             try:
                                 job_path.write_text(json.dumps(job))
+                                print(f"[Watcher] REMOTE wrote job {jid} -> {job_path}")
                             except Exception:
                                 pass
                 except Exception:
