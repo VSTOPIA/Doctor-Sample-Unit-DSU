@@ -1,7 +1,8 @@
 import json, time, pathlib, threading, datetime, subprocess, traceback, os, sys
 import shutil
 
-ROOT = pathlib.Path('/content/drive/MyDrive/M4L-Demucs')
+# Allow overriding the root (e.g., Kaggle). Defaults to Colab MyDrive.
+ROOT = pathlib.Path(os.environ.get('DSU_ROOT', '/content/drive/MyDrive/M4L-Demucs'))
 SITE = ROOT / '.venv' / 'site-packages'
 MODEL_CACHE = ROOT / 'model-cache'
 os.environ.setdefault('XDG_CACHE_HOME', str(MODEL_CACHE))

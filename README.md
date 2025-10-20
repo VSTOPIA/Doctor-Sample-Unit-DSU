@@ -20,6 +20,13 @@ Doctor Sample Unit is a Max for Live device by Ostin Solo for capturing audio, s
 
 Click the badge, Run all → the watcher mounts Drive, installs pinned versions, and starts. Drop audio into `MyDrive/M4L-Demucs/jobs/audio/`.
 
+📘 Kaggle (GPU) Option
+
+Open on Kaggle and Run all:
+- Upload your audio to `/kaggle/working/M4L-Demucs/jobs/audio/`
+- Watcher runs with `DSU_ROOT=/kaggle/working/M4L-Demucs`
+
+
 ## Workflows
 
 ### A) Precise by filename (recommended)
