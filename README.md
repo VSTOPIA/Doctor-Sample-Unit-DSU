@@ -25,6 +25,9 @@ Click the badge, Run all → the watcher mounts Drive, installs pinned versions,
 Open on Kaggle and Run all:
 - Upload your audio to `/kaggle/working/M4L-Demucs/jobs/audio/`
 - Watcher runs with `DSU_ROOT=/kaggle/working/M4L-Demucs`
+- Wheels/models cached under `/kaggle/working/M4L-Demucs` (enable Persistence → Files)
+- pip cache set to `/kaggle/working/M4L-Demucs/pip-cache` to avoid re-downloading
+- For very large caches, attach a private Kaggle Dataset once and mount it in the notebook
 
 [![Open in Kaggle](https://img.shields.io/badge/Open%20in-Kaggle-20BEFF?logo=kaggle&logoColor=white)](https://www.kaggle.com/kernels/welcome?src=https://raw.githubusercontent.com/VSTOPIA/Doctor-Sample-Unit-DSU/main/notebooks/Kaggle_DSU_Worker.ipynb)
 
