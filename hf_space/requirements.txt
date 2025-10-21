@@ -6,4 +6,5 @@ ffmpeg-python
 numpy
 python-multipart
 torchcodec
+soundfile
 
