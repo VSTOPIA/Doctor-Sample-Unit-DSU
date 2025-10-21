@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DSU CAPTCHA</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,sans-serif;margin:16px}
+    #img{max-width:100%;border:1px solid #ccc}
+    .row{margin:8px 0}
+    input,button{font-size:14px;padding:6px}
+  </style>
+  <script>
+    let base = 'http://127.0.0.1:45111'
+    async function refresh(){
+      const img = document.getElementById('img')
+      img.src = base + '/screenshot?_=' + Date.now()
+      const st = await (await fetch(base + '/state')).json()
+      document.getElementById('state').textContent = JSON.stringify(st)
+    }
+    function pick(ev){
+      const rect = ev.target.getBoundingClientRect()
+      const x = ev.clientX - rect.left
+      const y = ev.clientY - rect.top
+      fetch(base + '/click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({x,y})})
+        .then(()=>refresh())
+    }
+    function begin(){ fetch(base + '/begin',{method:'POST'}).then(()=>refresh()) }
+    function confirm(){ fetch(base + '/confirm',{method:'POST'}).then(()=>refresh()) }
+    function setBase(){ base = document.getElementById('base').value.trim(); refresh() }
+    window.onload = ()=>{ document.getElementById('img').addEventListener('click',pick); refresh(); setInterval(refresh, 2000) }
+  </script>
+  </head>
+<body>
+  <div class="row">
+    Broker: <input id="base" value="http://127.0.0.1:45111" size="40"> <button onclick="setBase()">Set</button>
+  </div>
+  <div class="row">
+    <button onclick="begin()">Begin</button>
+    <button onclick="confirm()">Confirm</button>
+    <span id="state"></span>
+  </div>
+  <div class="row">
+    <img id="img" alt="captcha" />
+  </div>
+</body>
+</html>
+
+

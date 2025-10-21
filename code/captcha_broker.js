@@ -3,6 +3,14 @@ const express = require('express')
 function createBroker(page, { port = 45111 } = {}) {
   const app = express()
   app.use(express.json({ limit: '1mb' }))
+  // CORS for jweb/jsui
+  app.use((req, res, next) => {
+    res.set('Access-Control-Allow-Origin', '*')
+    res.set('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+    res.set('Access-Control-Allow-Headers', 'Content-Type')
+    if (req.method === 'OPTIONS') return res.sendStatus(200)
+    next()
+  })
 
   async function getStatus() {
     let text = ''
