@@ -4,4 +4,5 @@ demucs==4.0.1
 spleeter==2.4.2
 ffmpeg-python
 numpy
+python-multipart
 
