@@ -119,16 +119,21 @@ def separate(
                 model, two_stems, jobs, shifts, segments, clip_mode,
             )
             run_demucs(inp, out_root, model, two_stems, jobs, shifts, segments, clip_mode)
-            # Demucs writes separated/<model>/<name>/ under out_root
-            sep = out_root / "separated"
+            # Demucs may write either out/<model>/<name>/ or out/separated/<model>/<name>/
+            candidates = [out_root / "separated", out_root / (model or "htdemucs")]
+            existing = [p for p in candidates if p.exists()]
+            search_root = existing[0] if existing else out_root
             # Find the deepest leaf containing files
             leaf = None
-            if sep.exists():
-                for p in sep.rglob("*"):
-                    if p.is_dir() and any(x.is_file() for x in p.iterdir()):
-                        leaf = p
+            for p in search_root.rglob("*"):
+                if p.is_dir() and any(x.is_file() for x in p.iterdir()):
+                    leaf = p
             if leaf is None:
-                logger.error("[HF] error: no stems found under %s", sep)
+                try:
+                    listing = [str(p) for p in out_root.rglob("*")][:100]
+                except Exception:
+                    listing = []
+                logger.error("[HF] error: no stems found under %s (out_root=%s, list sample=%s)", search_root, out_root, listing)
                 return JSONResponse({"error": "no stems found"}, status_code=500)
             zip_path = tmp / "stems.zip"
             zip_dir(leaf, zip_path)
