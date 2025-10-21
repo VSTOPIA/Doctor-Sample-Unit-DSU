@@ -39,7 +39,9 @@ def run_demucs(inp: pathlib.Path, out_dir: pathlib.Path, model: str, two_stems: 
     if clip_mode in ("rescale", "clamp"):
         cmd += ["--clip-mode", clip_mode]
     cmd += [str(inp)]
-    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    env = os.environ.copy()
+    env["TORCH_AUDIO_BACKEND"] = "soundfile"
+    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
     logger.info("[HF][demucs] exit=%s", res.returncode)
     if res.stdout:
         logger.info("[HF][demucs] log\n%s", res.stdout[-4000:])
