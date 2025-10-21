@@ -65,6 +65,9 @@ async function main() {
     const outDir = path.join(os.homedir(), 'Documents', 'doctorsampleunit_DSU')
     fs.mkdirSync(outDir, { recursive: true })
     fs.writeFileSync(path.join(outDir, 'broker.json'), JSON.stringify({ url: broker.url }, null, 2))
+    // Also open the HTML UI with the correct broker query param
+    const uiPath = path.join(__dirname, 'captcha_ui.html')
+    openInBrowser(uiPath + '?broker=' + encodeURIComponent(broker.url))
   } catch {}
 
   // Step 1: Create/Sign-in flow
@@ -258,6 +261,13 @@ function persistCredentials(email, password) {
 
 if (require.main === module) {
   main().catch(e => { console.error('ERROR', e.message); process.exit(1) })
+}
+
+function openInBrowser(p) {
+  const { exec } = require('child_process')
+  const plat = process.platform
+  const cmd = plat === 'darwin' ? `open "${p}"` : plat === 'win32' ? `start "" "${p}"` : `xdg-open "${p}"`
+  exec(cmd)
 }
 
 

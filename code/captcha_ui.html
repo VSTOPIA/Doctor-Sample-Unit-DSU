@@ -34,7 +34,16 @@
       refresh()
     }
     function setBase(){ base = document.getElementById('base').value.trim(); refresh() }
-    window.onload = ()=>{ document.getElementById('img').addEventListener('click',pick); refresh(); setInterval(refresh, 2000) }
+    window.onload = ()=>{
+      // If broker is passed via query (?broker=http://127.0.0.1:xxxxx), use it automatically
+      try {
+        const params = new URLSearchParams(window.location.search)
+        const b = params.get('broker')
+        if (b) { base = b; document.getElementById('base').value = base }
+      } catch {}
+      document.getElementById('img').addEventListener('click',pick)
+      refresh(); setInterval(refresh, 2000)
+    }
   </script>
   </head>
 <body>
