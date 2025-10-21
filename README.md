@@ -31,6 +31,18 @@ Open on Kaggle and Run all:
 
 [![Open in Kaggle](https://img.shields.io/badge/Open%20in-Kaggle-20BEFF?logo=kaggle&logoColor=white)](https://www.kaggle.com/kernels/welcome?src=https://raw.githubusercontent.com/VSTOPIA/Doctor-Sample-Unit-DSU/main/notebooks/Kaggle_DSU_Worker.ipynb)
 
+### How users submit files (two options)
+
+- Simple: Local path in Max for Live
+  - If you have Google Drive for Desktop: dropping a WAV into `My Drive/M4L-Demucs/jobs/audio/` triggers processing on Colab (no credentials).
+  - On Kaggle, use the DSU device’s “submit path” action (the app uploads the file to an anonymous URL and writes a job JSON; the watcher downloads and processes it).
+
+- Without Max for Live (manual testing)
+  - In the Kaggle notebook: run it (Run all). Then add a job by appending a JSON line to the repo’s `remote_jobs.jsonl` with a public `source_url`:
+    - Example JSON line:
+      `{ "id": "mysong1", "model": "htdemucs_ft", "two_stems": "vocals", "jobs": 4, "shifts": 4, "segments": 0, "clip_mode": "rescale", "source_url": "https://example.com/audio.wav" }`
+    - The watcher fetches, separates, and writes results to `/kaggle/working/M4L-Demucs/out/<id>/`.
+
 
 ## Workflows
 
