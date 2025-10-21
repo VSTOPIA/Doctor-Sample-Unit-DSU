@@ -22,3 +22,6 @@ M4L-Demucs/
 
 # Secrets
 .env
+
+# Local secrets
+.hf_token
