@@ -43,6 +43,36 @@ Open on Kaggle and Run all:
       `{ "id": "mysong1", "model": "htdemucs_ft", "two_stems": "vocals", "jobs": 4, "shifts": 4, "segments": 0, "clip_mode": "rescale", "source_url": "https://example.com/audio.wav" }`
     - The watcher fetches, separates, and writes results to `/kaggle/working/M4L-Demucs/out/<id>/`.
 
+### Auto-return of results to your computer (no extra services)
+
+- Start a local receiver once on your computer:
+  - Terminal:
+    ```bash
+    node "/Users/<you>/Documents/Max 9/Max for Live Devices/DSU Project/code/local_receiver.js"
+    ```
+  - It listens on `http://127.0.0.1:41555/dsu-callback` and saves zips to `~/Documents/doctorsampleunit_DSU/Output`.
+- When submitting a job for Kaggle, include an optional `callback_url` in the job JSON, e.g.:
+  ```json
+  { "id": "mysong1", "model": "htdemucs_ft", "two_stems": "vocals", "jobs": 4, "shifts": 4, "segments": 0, "clip_mode": "rescale", "source_url": "https://.../audio.wav", "callback_url": "http://127.0.0.1:41555/dsu-callback" }
+  ```
+- The watcher will zip results, upload to a temporary URL, and POST that link to your local receiver, which auto-downloads the zip.
+
+### (Optional) Build a Kaggle wheels/models dataset locally
+
+- Prereq: place your Kaggle API token at `~/.kaggle/kaggle.json` (chmod 600), and install the CLI: `pip install kaggle`.
+- Assemble wheels/models locally, then run:
+```bash
+python tools/make_kaggle_dataset.py \
+  --dataset-id vstopia/dsu-cache \
+  --out ./dsu-cache \
+  --wheels-cu126 /path/to/wheels_cu126 \
+  --wheels-cu124 /path/to/wheels_cu124 \
+  --wheels-cu121 /path/to/wheels_cu121 \
+  --wheels-cu118 /path/to/wheels_cu118 \
+  --models /path/to/models \
+  --private --message "Initial cache"
+```
+- Attach the dataset in Kaggle → “Add data”, then the Worker uses it for instant cold-start installs.
 
 ## Workflows
 
