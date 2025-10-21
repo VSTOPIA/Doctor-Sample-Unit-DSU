@@ -61,8 +61,8 @@ async function main() {
   const captchaOrVerify = await page.locator('text=/let\'s confirm you are human|verify your email|check your email/i').first().isVisible().catch(() => false)
   if (captchaOrVerify) {
     console.log(JSON.stringify({ broker: broker.url, hint: 'Solve CAPTCHA if present, then click verification link in your email.' }, null, 2))
-    // Poll until captcha cleared
-    await brokerMod.ensureHuman(page, { port: new URL(broker.url).port })
+    // Poll until captcha cleared (re-use existing broker, don’t bind again)
+    await brokerMod.ensureHuman(page, { port: Number(new URL(broker.url).port), existing: true })
   }
 
   // If still needs verification, pause until user completes it externally

@@ -86,8 +86,16 @@ function createBroker(page, { port = 45111 } = {}) {
   return { server, url: actual() }
 }
 
-async function ensureHuman(page, { port } = {}) {
-  const { server, url } = createBroker(page, { port })
+async function ensureHuman(page, { port, existing } = {}) {
+  let server
+  let url
+  if (existing && port) {
+    url = `http://127.0.0.1:${port}`
+  } else {
+    const created = createBroker(page, { port })
+    server = created.server
+    url = created.url
+  }
   // Poll until captcha screen is gone or timeout
   const t0 = Date.now(); const maxMs = 10 * 60 * 1000
   while (Date.now() - t0 < maxMs) {
@@ -97,7 +105,7 @@ async function ensureHuman(page, { port } = {}) {
     if (!still) break
     await new Promise(r => setTimeout(r, 1500))
   }
-  server.close()
+  try { if (server) server.close() } catch {}
   return url
 }
 
