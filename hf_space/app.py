@@ -39,7 +39,12 @@ def run_demucs(inp: pathlib.Path, out_dir: pathlib.Path, model: str, two_stems: 
     if clip_mode in ("rescale", "clamp"):
         cmd += ["--clip-mode", clip_mode]
     cmd += [str(inp)]
-    subprocess.run(cmd, check=True)
+    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    logger.info("[HF][demucs] exit=%s", res.returncode)
+    if res.stdout:
+        logger.info("[HF][demucs] log\n%s", res.stdout[-4000:])
+    if res.returncode != 0:
+        raise subprocess.CalledProcessError(res.returncode, cmd, output=res.stdout)
 
 
 def run_spleeter(inp: pathlib.Path, out_dir: pathlib.Path, stems: int) -> None:
@@ -51,7 +56,12 @@ def run_spleeter(inp: pathlib.Path, out_dir: pathlib.Path, stems: int) -> None:
         "-o", str(out_dir),
         str(inp)
     ]
-    subprocess.run(cmd, check=True)
+    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    logger.info("[HF][spleeter] exit=%s", res.returncode)
+    if res.stdout:
+        logger.info("[HF][spleeter] log\n%s", res.stdout[-4000:])
+    if res.returncode != 0:
+        raise subprocess.CalledProcessError(res.returncode, cmd, output=res.stdout)
 
 
 def zip_dir(src_dir: pathlib.Path, dst_zip: pathlib.Path) -> None:
