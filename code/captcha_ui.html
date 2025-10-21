@@ -27,6 +27,12 @@
     }
     function begin(){ fetch(base + '/begin',{method:'POST'}).then(()=>refresh()) }
     function confirm(){ fetch(base + '/confirm',{method:'POST'}).then(()=>refresh()) }
+    async function navigate(){
+      const u = prompt('Goto URL (leave empty to skip):','https://huggingface.co/join')
+      if (!u) return
+      await fetch(base + '/goto?url=' + encodeURIComponent(u))
+      refresh()
+    }
     function setBase(){ base = document.getElementById('base').value.trim(); refresh() }
     window.onload = ()=>{ document.getElementById('img').addEventListener('click',pick); refresh(); setInterval(refresh, 2000) }
   </script>
@@ -38,6 +44,7 @@
   <div class="row">
     <button onclick="begin()">Begin</button>
     <button onclick="confirm()">Confirm</button>
+    <button onclick="navigate()">Goto</button>
     <span id="state"></span>
   </div>
   <div class="row">

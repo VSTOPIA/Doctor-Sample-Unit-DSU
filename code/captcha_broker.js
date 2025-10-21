@@ -15,9 +15,11 @@ function createBroker(page, { port = 45111 } = {}) {
   async function getStatus() {
     let text = ''
     try { text = await page.textContent('body') } catch {}
-    const hasConfirm = /let's confirm you are human/i.test(String(text || ''))
+    const s = String(text || '')
+    const hasConfirm = /let's confirm you are human|choose all/i.test(s)
+    const hasBegin = await page.locator('button:has-text("Begin"), button:has-text("begin")').first().isVisible().catch(() => false)
     const hasEmail = await page.locator('input[type="email"], input[name="email"], input#email').first().isVisible().catch(() => false)
-    const state = hasConfirm ? 'captcha' : (hasEmail ? 'form' : 'unknown')
+    const state = hasConfirm || hasBegin ? 'captcha' : (hasEmail ? 'form' : 'unknown')
     const vp = page.viewportSize?.() || { width: 1280, height: 800 }
     return { state, viewport: vp }
   }
@@ -64,6 +66,19 @@ function createBroker(page, { port = 45111 } = {}) {
       if (await el.isVisible()) await el.click()
       res.json({ ok: true })
     } catch (e) { res.status(500).json({ error: e.message }) }
+  })
+
+  app.get('/goto', async (req, res) => {
+    try {
+      const u = String(req.query.url || '')
+      if (!u) return res.status(400).json({ error: 'url required' })
+      await page.goto(u, { waitUntil: 'domcontentloaded' })
+      res.json({ ok: true })
+    } catch (e) { res.status(500).json({ error: e.message }) }
+  })
+
+  app.post('/reload', async (req, res) => {
+    try { await page.reload({ waitUntil: 'domcontentloaded' }); res.json({ ok: true }) } catch (e) { res.status(500).json({ error: e.message }) }
   })
 
   // Allow port 0 (random) or retry if fixed port is in use
