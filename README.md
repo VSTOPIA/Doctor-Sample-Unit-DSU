@@ -128,6 +128,26 @@ node code/hf_client.js \
   --engine demucs --model htdemucs_ft --two_stems vocals
 ```
 
+#### Scale for free: let each user duplicate the Space
+
+- One Space = one machine. To avoid contention, each user should create their own copy of the Space under their account (free CPU):
+  - Duplicate link: https://huggingface.co/spaces/VSTOPIA/DSU?duplicate=true&hardware=cpu-basic&sdk=docker&title=DSU-Worker
+  - Have users open the link while logged in; HF will create `username/DSU-Worker` for them.
+- In DSU’s client, store one or more user Spaces and round-robin:
+  ```bash
+  # Add your Space URL once
+  node code/hf_client.js --add-space https://<your-username>-dsu-worker.hf.space
+
+  # List configured Spaces
+  node code/hf_client.js --list-spaces
+
+  # Submit (will use the next Space in round-robin if multiple exist)
+  node code/hf_client.js \
+    --file "/absolute/path/to/audio.wav" \
+    --engine demucs --model htdemucs_ft --two_stems vocals
+  ```
+  - To target a specific Space, pass `--space https://...`.
+
 ## Workflows
 
 ### A) Precise by filename (recommended)
