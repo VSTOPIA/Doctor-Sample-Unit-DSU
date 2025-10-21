@@ -148,6 +148,18 @@ node code/hf_client.js \
   ```
   - To target a specific Space, pass `--space https://...`.
 
+Provision a user Space from local (no GitHub interaction):
+```bash
+# Option A: No token (guided browser flow)
+node code/hf_space_provision.js --name DSU-Worker --hardware cpu-basic
+# Follow the prompt: it opens the duplicate link; paste the new Space URL back.
+
+# Option B: With personal HF token (non-interactive API call)
+export HF_TOKEN=hf_xxx
+node code/hf_space_provision.js --name DSU-Worker --hardware cpu-basic --private false --wait-secs 180
+# It creates the Space via API, waits until up, and stores the URL for round-robin.
+```
+
 ## Workflows
 
 ### A) Precise by filename (recommended)
