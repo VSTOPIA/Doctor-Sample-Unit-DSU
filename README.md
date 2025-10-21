@@ -160,6 +160,13 @@ node code/hf_space_provision.js --name DSU-Worker --hardware cpu-basic --private
 # It creates the Space via API, waits until up, and stores the URL for round-robin.
 ```
 
+Automate duplication with a headless browser (no user clicks):
+```bash
+# Requires: npm i -D playwright
+node code/hf_space_autoduplicate.js --name DSU-Worker --hardware cpu-basic --headless true --wait-secs 180
+# Optional: export HF_USER=<your-email> and HF_PASS=<your-password> to log in automatically if needed.
+```
+
 ## Workflows
 
 ### A) Precise by filename (recommended)
