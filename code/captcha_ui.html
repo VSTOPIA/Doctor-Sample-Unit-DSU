@@ -40,6 +40,13 @@
         const params = new URLSearchParams(window.location.search)
         const b = params.get('broker')
         if (b) { base = b; document.getElementById('base').value = base }
+        else {
+          // If served by the broker itself, default to current origin
+          if (window.location.origin.startsWith('http://127.0.0.1')) {
+            base = window.location.origin
+            document.getElementById('base').value = base
+          }
+        }
       } catch {}
       document.getElementById('img').addEventListener('click',pick)
       refresh(); setInterval(refresh, 2000)

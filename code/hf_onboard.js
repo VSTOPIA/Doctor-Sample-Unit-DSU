@@ -66,8 +66,12 @@ async function main() {
     fs.mkdirSync(outDir, { recursive: true })
     fs.writeFileSync(path.join(outDir, 'broker.json'), JSON.stringify({ url: broker.url }, null, 2))
     // Also open the HTML UI with the correct broker query param
-    const uiPath = path.join(__dirname, 'captcha_ui.html')
-    openInBrowser(uiPath + '?broker=' + encodeURIComponent(broker.url))
+    // Try opening via broker-hosted URL first (if we later add /ui), else file:// fallback
+    openInBrowser(broker.url + '/ui?broker=' + encodeURIComponent(broker.url))
+    setTimeout(() => {
+      const uiPath = path.join(__dirname, 'captcha_ui.html')
+      openInBrowser(uiPath + '?broker=' + encodeURIComponent(broker.url))
+    }, 1200)
   } catch {}
 
   // Step 1: Create/Sign-in flow

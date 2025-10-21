@@ -1,4 +1,5 @@
 const express = require('express')
+const path = require('path')
 
 function createBroker(page, { port = 45111 } = {}) {
   const app = express()
@@ -65,6 +66,13 @@ function createBroker(page, { port = 45111 } = {}) {
       const el = page.locator(sel).first()
       if (await el.isVisible()) await el.click()
       res.json({ ok: true })
+    } catch (e) { res.status(500).json({ error: e.message }) }
+  })
+
+  // Serve minimal UI directly from the broker to avoid file:// query issues
+  app.get('/ui', async (req, res) => {
+    try {
+      res.sendFile(path.join(__dirname, 'captcha_ui.html'))
     } catch (e) { res.status(500).json({ error: e.message }) }
   })
 
