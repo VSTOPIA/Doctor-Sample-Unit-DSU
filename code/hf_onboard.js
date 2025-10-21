@@ -38,15 +38,43 @@ async function main() {
   }
   const userDataDir = path.join(os.homedir(), 'Documents', 'doctorsampleunit_DSU', '.playwright')
   fs.mkdirSync(userDataDir, { recursive: true })
-  const ctx = await chromium.launchPersistentContext(userDataDir, { headless })
+  const ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
+  const ctx = await chromium.launchPersistentContext(userDataDir, {
+    headless,
+    userAgent: ua,
+    viewport: { width: 1280, height: 900 },
+    args: [
+      '--disable-blink-features=AutomationControlled',
+      '--no-sandbox',
+      '--disable-features=IsolateOrigins,site-per-process',
+    ],
+  })
   const page = await ctx.newPage()
+  await ctx.setExtraHTTPHeaders({ 'Accept-Language': 'en-US,en;q=0.9' })
+  await page.addInitScript(() => {
+    try { Object.defineProperty(navigator, 'webdriver', { get: () => undefined }) } catch {}
+    try { window.chrome = { runtime: {} } } catch {}
+    try { Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] }) } catch {}
+    try { Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3] }) } catch {}
+  })
 
   // Start broker for human-in-the-loop steps
   const broker = brokerMod.createBroker(page, { port: args.port ? Number(args.port) : 0 })
+  try {
+    const outDir = path.join(os.homedir(), 'Documents', 'doctorsampleunit_DSU')
+    fs.mkdirSync(outDir, { recursive: true })
+    fs.writeFileSync(path.join(outDir, 'broker.json'), JSON.stringify({ url: broker.url }, null, 2))
+  } catch {}
 
   // Step 1: Create/Sign-in flow
   // Try join first; if user already exists, switch to login
   await page.goto('https://huggingface.co/join', { waitUntil: 'domcontentloaded' })
+  // Handle potential CloudFront 403 blocks by warming homepage and retrying
+  if (await isCloudfrontBlocked(page)) {
+    await page.goto('https://huggingface.co/', { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(800)
+    await page.goto('https://huggingface.co/join', { waitUntil: 'domcontentloaded' })
+  }
   await page.waitForTimeout(800)
   let atJoin = await page.locator('text=/Create your account|Join Hugging Face/i').first().isVisible().catch(() => false)
   if (atJoin) {
@@ -173,6 +201,13 @@ async function waitUntilUp(url, timeoutMs) {
     await new Promise(r => setTimeout(r, 3000))
   }
   return false
+}
+
+async function isCloudfrontBlocked(page) {
+  try {
+    const body = await page.textContent('body')
+    return /403 ERROR|Request blocked|cloudfront/i.test(String(body || ''))
+  } catch { return false }
 }
 
 if (require.main === module) {
