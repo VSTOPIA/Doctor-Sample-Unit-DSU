@@ -74,6 +74,60 @@ python tools/make_kaggle_dataset.py \
 ```
 - Attach the dataset in Kaggle → “Add data”, then the Worker uses it for instant cold-start installs.
 
+### Hugging Face Space API (Demucs + Spleeter)
+
+- Space URL: `https://vstopia-dsu.hf.space`
+- Endpoint: `POST /separate` (multipart form-data). Returns `stems.zip`.
+- First run on a fresh Space downloads model weights (slower). Subsequent runs are faster (cached).
+- View Space logs for `[HF] /separate received …` and processing details.
+
+Demucs — 2 stems (vocals vs instrumental):
+```bash
+curl -fL -X POST \
+  --form 'file=@/absolute/path/to/audio.wav;type=audio/wav' \
+  --form 'engine=demucs' \
+  --form 'model=htdemucs_ft' \
+  --form 'two_stems=vocals' \
+  --form 'jobs=4' \
+  --form 'shifts=0' \
+  --form 'segments=0' \
+  --form 'clip_mode=rescale' \
+  https://vstopia-dsu.hf.space/separate \
+  -o "$HOME/Documents/doctorsampleunit_DSU/Output/audio_demucs2.zip"
+```
+
+Demucs — 4 stems (vocals, drums, bass, other):
+```bash
+curl -fL -X POST \
+  --form 'file=@/absolute/path/to/audio.wav;type=audio/wav' \
+  --form 'engine=demucs' \
+  --form 'model=htdemucs_ft' \
+  --form 'jobs=4' \
+  --form 'shifts=0' \
+  --form 'segments=0' \
+  --form 'clip_mode=rescale' \
+  https://vstopia-dsu.hf.space/separate \
+  -o "$HOME/Documents/doctorsampleunit_DSU/Output/audio_demucs4.zip"
+```
+
+Spleeter — 2/4/5 stems (5 adds piano):
+```bash
+curl -fL -X POST \
+  --form 'file=@/absolute/path/to/audio.wav;type=audio/wav' \
+  --form 'engine=spleeter' \
+  --form 'spleeter_stems=5' \
+  https://vstopia-dsu.hf.space/separate \
+  -o "$HOME/Documents/doctorsampleunit_DSU/Output/audio_spleeter5.zip"
+```
+
+Node client (local):
+```bash
+node code/hf_client.js \
+  --space https://vstopia-dsu.hf.space \
+  --file "/absolute/path/to/audio.wav" \
+  --engine demucs --model htdemucs_ft --two_stems vocals
+```
+
 ## Workflows
 
 ### A) Precise by filename (recommended)
