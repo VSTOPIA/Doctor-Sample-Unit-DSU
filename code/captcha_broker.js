@@ -66,8 +66,24 @@ function createBroker(page, { port = 45111 } = {}) {
     } catch (e) { res.status(500).json({ error: e.message }) }
   })
 
-  const server = app.listen(port)
-  return { server, url: `http://127.0.0.1:${port}` }
+  // Allow port 0 (random) or retry if fixed port is in use
+  let server
+  let chosen = port || 0
+  for (let i = 0; i < 20; i++) {
+    try {
+      server = app.listen(chosen)
+      break
+    } catch (e) {
+      if (e && e.code === 'EADDRINUSE' && port) { chosen++; continue }
+      throw e
+    }
+  }
+  const actual = () => {
+    const addr = server.address()
+    const p = typeof addr === 'object' && addr ? addr.port : chosen
+    return `http://127.0.0.1:${p}`
+  }
+  return { server, url: actual() }
 }
 
 async function ensureHuman(page, { port } = {}) {

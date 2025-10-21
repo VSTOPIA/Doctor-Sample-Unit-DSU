@@ -42,7 +42,7 @@ async function main() {
   const page = await ctx.newPage()
 
   // Start broker for human-in-the-loop steps
-  const broker = brokerMod.createBroker(page, { port: args.port ? Number(args.port) : 45111 })
+  const broker = brokerMod.createBroker(page, { port: args.port ? Number(args.port) : 0 })
 
   // Step 1: Create/Sign-in flow
   // Try join first; if user already exists, switch to login
@@ -62,7 +62,7 @@ async function main() {
   if (captchaOrVerify) {
     console.log(JSON.stringify({ broker: broker.url, hint: 'Solve CAPTCHA if present, then click verification link in your email.' }, null, 2))
     // Poll until captcha cleared
-    await brokerMod.ensureHuman(page, { port: args.port ? Number(args.port) : 45111 })
+    await brokerMod.ensureHuman(page, { port: new URL(broker.url).port })
   }
 
   // If still needs verification, pause until user completes it externally
