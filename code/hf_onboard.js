@@ -3,6 +3,7 @@ const fs = require('fs')
 const os = require('os')
 const path = require('path')
 const axios = require('axios')
+const crypto = require('crypto')
 
 async function main() {
   let chromium
@@ -24,7 +25,7 @@ async function main() {
 
   const args = parseArgs(process.argv)
   const email = args.email || process.env.HF_EMAIL
-  const password = args.password || process.env.HF_PASSWORD
+  let password = args.password || process.env.HF_PASSWORD
   const spaceName = args.name || 'DSU-Worker'
   const hardware = args.hardware || 'cpu-basic'
   const headless = args.headless !== 'false'
@@ -76,6 +77,8 @@ async function main() {
     await page.goto('https://huggingface.co/join', { waitUntil: 'domcontentloaded' })
   }
   await page.waitForTimeout(800)
+  // Auto-press Begin if puzzle pre-gate is visible
+  try { const btn = page.locator('button:has-text("Begin"), button:has-text("begin")').first(); if (await btn.isVisible()) { await btn.click(); await page.waitForTimeout(500) } } catch {}
   let atJoin = await page.locator('text=/Create your account|Join Hugging Face/i').first().isVisible().catch(() => false)
   if (atJoin) {
     // Fill email & password
@@ -91,6 +94,13 @@ async function main() {
     console.log(JSON.stringify({ broker: broker.url, hint: 'Solve CAPTCHA if present, then click verification link in your email.' }, null, 2))
     // Poll until captcha cleared (re-use existing broker, don’t bind again)
     await brokerMod.ensureHuman(page, { port: Number(new URL(broker.url).port), existing: true })
+  }
+
+  // If HF flags exposed password, set a strong one automatically
+  if (await exposedPasswordPrompt(page)) {
+    password = generateStrongPassword()
+    await setNewPassword(page, password)
+    persistCredentials(email, password)
   }
 
   // If still needs verification, pause until user completes it externally
@@ -208,6 +218,42 @@ async function isCloudfrontBlocked(page) {
     const body = await page.textContent('body')
     return /403 ERROR|Request blocked|cloudfront/i.test(String(body || ''))
   } catch { return false }
+}
+
+function generateStrongPassword() {
+  const raw = crypto.randomBytes(18).toString('base64url')
+  // Ensure mixed charset
+  return raw + 'Aa1!'
+}
+
+async function exposedPasswordPrompt(page) {
+  try {
+    return await page.locator('text=/password has been exposed|set a new password|pwned/i').first().isVisible()
+  } catch { return false }
+}
+
+async function setNewPassword(page, newPass) {
+  // Try to fill two visible password inputs
+  const inputs = page.locator('input[type="password"]')
+  const count = await inputs.count().catch(() => 0)
+  let filled = 0
+  for (let i = 0; i < count && filled < 2; i++) {
+    try {
+      const inp = inputs.nth(i)
+      if (await inp.isVisible()) { await inp.fill(newPass); filled++ }
+    } catch {}
+  }
+  await smartSubmit(page)
+  await page.waitForTimeout(800)
+}
+
+function persistCredentials(email, password) {
+  try {
+    const outDir = path.join(os.homedir(), 'Documents', 'doctorsampleunit_DSU')
+    const p = path.join(outDir, 'hf_credentials.json')
+    fs.mkdirSync(outDir, { recursive: true })
+    fs.writeFileSync(p, JSON.stringify({ email, password, ts: new Date().toISOString() }, null, 2))
+  } catch {}
 }
 
 if (require.main === module) {
