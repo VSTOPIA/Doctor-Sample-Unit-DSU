@@ -167,6 +167,14 @@ node code/hf_space_autoduplicate.js --name DSU-Worker --hardware cpu-basic --hea
 # Optional: export HF_USER=<your-email> and HF_PASS=<your-password> to log in automatically if needed.
 ```
 
+Create a Hugging Face account headlessly (UI wiring helper):
+```bash
+# Requires: npm i -D playwright
+node code/hf_account_create.js --email you@example.com --password 'YourStrongPassword' --headless true
+# Output: { status: "pending_verification", message: "Verification email sent..." }
+# Ask the user to click the email link; after that you can run the duplication step.
+```
+
 ## Workflows
 
 ### A) Precise by filename (recommended)
