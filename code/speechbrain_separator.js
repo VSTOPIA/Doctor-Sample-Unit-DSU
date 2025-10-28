@@ -86,8 +86,8 @@ import torch
 import torchaudio
 from speechbrain.inference.separation import SepformerSeparation as separator
 
-input_path = sys.argv[1]
-output_dir = sys.argv[2]
+input_path = str(sys.argv[1])  # Convert to string to avoid Path type issues
+output_dir = str(sys.argv[2])
 device = sys.argv[3] if len(sys.argv) > 3 else 'cpu'
 
 print(f"[SpeechBrain] Loading model...")
@@ -101,15 +101,42 @@ model = separator.from_hparams(
 print(f"[SpeechBrain] Processing: {input_path}")
 print(f"[SpeechBrain] Device: {device}")
 
-# Separate speakers
-est_sources = model.separate_file(path=input_path)
+# Load audio manually to avoid Path type issues
+waveform, sample_rate = torchaudio.load(input_path)
+print(f"[SpeechBrain] Loaded audio: {waveform.shape}, sample_rate: {sample_rate}")
 
-print(f"[SpeechBrain] Separated {est_sources.shape[1]} sources")
+# Convert stereo to mono if needed
+if waveform.shape[0] > 1:
+    waveform = torch.mean(waveform, dim=0, keepdim=True)
+    print(f"[SpeechBrain] Converted to mono: {waveform.shape}")
+
+# Resample to 8kHz if needed (model expects 8kHz)
+if sample_rate != 8000:
+    resampler = torchaudio.transforms.Resample(sample_rate, 8000)
+    waveform = resampler(waveform)
+    print(f"[SpeechBrain] Resampled to 8kHz: {waveform.shape}")
+    sample_rate = 8000
+
+# Separate speakers - waveform should be [channels, time]
+est_sources = model.separate_batch(waveform)
+
+print(f"[SpeechBrain] Output shape: {est_sources.shape}")
+
+# est_sources is [batch, time, sources] - we need to transpose
+# to get [batch, sources, time]
+if len(est_sources.shape) == 3:
+    est_sources = est_sources.permute(0, 2, 1)
+    num_sources = est_sources.shape[1]
+else:
+    num_sources = 1
+
+print(f"[SpeechBrain] Separated {num_sources} sources")
 
 # Save separated sources
-for i in range(est_sources.shape[1]):
+for i in range(num_sources):
     output_path = os.path.join(output_dir, f"speaker_{i+1}.wav")
-    torchaudio.save(output_path, est_sources[:, i, :].cpu(), 8000)
+    # est_sources is now [batch, sources, time], extract [channels, time]
+    torchaudio.save(output_path, est_sources[0, i, :].unsqueeze(0).cpu(), sample_rate)
     print(f"[SpeechBrain] Saved: {output_path}")
 
 print("[SpeechBrain] Done!")
