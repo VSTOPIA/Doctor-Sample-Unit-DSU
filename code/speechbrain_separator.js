@@ -92,9 +92,10 @@ device = sys.argv[3] if len(sys.argv) > 3 else 'cpu'
 
 print(f"[SpeechBrain] Loading model...")
 # Use pre-trained Sepformer model from HuggingFace
+# Using sepformer-wsj02mix which works at 16kHz for better quality
 model = separator.from_hparams(
-    source="speechbrain/sepformer-whamr",
-    savedir="pretrained_models/sepformer-whamr",
+    source="speechbrain/sepformer-wsj02mix",
+    savedir="pretrained_models/sepformer-wsj02mix",
     run_opts={"device": device}
 )
 
@@ -102,20 +103,20 @@ print(f"[SpeechBrain] Processing: {input_path}")
 print(f"[SpeechBrain] Device: {device}")
 
 # Load audio manually to avoid Path type issues
-waveform, sample_rate = torchaudio.load(input_path)
-print(f"[SpeechBrain] Loaded audio: {waveform.shape}, sample_rate: {sample_rate}")
+waveform, original_sample_rate = torchaudio.load(input_path)
+print(f"[SpeechBrain] Loaded audio: {waveform.shape}, sample_rate: {original_sample_rate}")
 
 # Convert stereo to mono if needed
 if waveform.shape[0] > 1:
     waveform = torch.mean(waveform, dim=0, keepdim=True)
     print(f"[SpeechBrain] Converted to mono: {waveform.shape}")
 
-# Resample to 8kHz if needed (model expects 8kHz)
-if sample_rate != 8000:
-    resampler = torchaudio.transforms.Resample(sample_rate, 8000)
+# Resample to 16kHz if needed (model expects 16kHz for better quality)
+model_sample_rate = 16000
+if original_sample_rate != model_sample_rate:
+    resampler = torchaudio.transforms.Resample(original_sample_rate, model_sample_rate)
     waveform = resampler(waveform)
-    print(f"[SpeechBrain] Resampled to 8kHz: {waveform.shape}")
-    sample_rate = 8000
+    print(f"[SpeechBrain] Resampled to {model_sample_rate}Hz: {waveform.shape}")
 
 # Separate speakers - waveform should be [channels, time]
 est_sources = model.separate_batch(waveform)
@@ -132,11 +133,22 @@ else:
 
 print(f"[SpeechBrain] Separated {num_sources} sources")
 
+# Upsample back to original sample rate if needed
+if original_sample_rate != model_sample_rate:
+    upsampler = torchaudio.transforms.Resample(model_sample_rate, original_sample_rate)
+    print(f"[SpeechBrain] Upsampling back to {original_sample_rate}Hz...")
+
 # Save separated sources
 for i in range(num_sources):
     output_path = os.path.join(output_dir, f"speaker_{i+1}.wav")
     # est_sources is now [batch, sources, time], extract [channels, time]
-    torchaudio.save(output_path, est_sources[0, i, :].unsqueeze(0).cpu(), sample_rate)
+    speaker_audio = est_sources[0, i, :].unsqueeze(0).cpu()
+    
+    # Upsample to original sample rate
+    if original_sample_rate != model_sample_rate:
+        speaker_audio = upsampler(speaker_audio)
+    
+    torchaudio.save(output_path, speaker_audio, original_sample_rate)
     print(f"[SpeechBrain] Saved: {output_path}")
 
 print("[SpeechBrain] Done!")
