@@ -270,8 +270,8 @@ unzip -o "$HOME/Documents/doctorsampleunit_DSU/Output/VIDEO_ID_stems.zip" \
 
 Result: 6 isolated stems ready for Ableton Live!
 
-### Workflow 2: Voice Cloning / TTS (Speech Processing for GPT-SoVITS)
-For preparing clean speech samples for voice cloning:
+### Workflow 2: Voice Cloning / TTS - Single Speaker (Speech Processing for GPT-SoVITS)
+For preparing clean speech samples from single-speaker content:
 
 ```bash
 # 1. Download speech/interview audio
@@ -301,6 +301,38 @@ unzip -o "$HOME/Documents/doctorsampleunit_DSU/Output/INTERVIEW_ID_stems.zip" \
 ```
 
 Result: Clean speech vocals ready for GPT-SoVITS training!
+
+### Workflow 3: Voice Cloning / TTS - Multiple Speakers (2-5 speakers)
+For separating individual speakers from interviews, podcasts, or conversations:
+
+```bash
+# 1. Download interview/podcast with multiple speakers
+./yt-dlp_macos --cookies-from-browser chrome -x --audio-format wav \
+  -o "$HOME/Documents/doctorsampleunit_DSU/Downloads/%(id)s.%(ext)s" \
+  'https://www.youtube.com/watch?v=PODCAST_ID'
+
+# 2. Remove silence FIRST (critical for multi-speaker separation)
+node code/silence_remover.js \
+  "$HOME/Documents/doctorsampleunit_DSU/Downloads/PODCAST_ID.wav" \
+  "$HOME/Documents/doctorsampleunit_DSU/Downloads/PODCAST_ID_no_silence.wav" \
+  --margin 0.1s
+
+# 3. Separate speakers using SVoice (Facebook Research)
+node code/speaker_separator.js \
+  "$HOME/Documents/doctorsampleunit_DSU/Downloads/PODCAST_ID_no_silence.wav" \
+  "$HOME/Documents/doctorsampleunit_DSU/Output/PODCAST_ID_speakers/" \
+  --device mps
+
+# Output: s1.wav, s2.wav, ... (one file per speaker)
+```
+
+Result: Individual speaker files ready for GPT-SoVITS training!
+
+**Note**: [SVoice](https://github.com/facebookresearch/svoice) achieves state-of-the-art performance:
+- 2 speakers: 20.1 dB SI-SNRi
+- 3 speakers: 16.9 dB SI-SNRi  
+- 4 speakers: 12.9 dB SI-SNRi
+- 5 speakers: 10.6 dB SI-SNRi
 
 ## Legal
 For educational/personal use only. Respect copyright and platform terms.
