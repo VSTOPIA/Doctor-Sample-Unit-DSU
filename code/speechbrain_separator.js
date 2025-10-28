@@ -9,30 +9,52 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-// Check if SpeechBrain is installed
+const VENV_DIR = path.join(__dirname, '../.venv_speechbrain');
+const VENV_PYTHON = path.join(VENV_DIR, 'bin/python');
+
+// Check if virtual environment exists
+function checkVenv() {
+  return fs.existsSync(VENV_PYTHON);
+}
+
+// Check if SpeechBrain is installed in venv
 function checkSpeechBrain() {
+  if (!checkVenv()) {
+    return Promise.resolve(false);
+  }
+  
   return new Promise((resolve) => {
-    const check = spawn('python3', ['-c', 'import speechbrain'], { shell: true });
+    const check = spawn(VENV_PYTHON, ['-c', 'import speechbrain'], { shell: false });
     check.on('close', (code) => {
       resolve(code === 0);
     });
   });
 }
 
-// Install SpeechBrain
-function installSpeechBrain() {
-  console.log('[SpeechBrain] Installing SpeechBrain...');
+// Setup virtual environment and install SpeechBrain
+function setupEnvironment() {
+  console.log('[SpeechBrain] Setting up isolated Python environment...');
+  console.log('[SpeechBrain] This is a one-time setup and may take a few minutes.');
+  
   return new Promise((resolve, reject) => {
-    const install = spawn('pip3', ['install', 'speechbrain'], { 
-      shell: true,
+    const setupScript = path.join(__dirname, '../tools/setup_speechbrain_env.sh');
+    
+    if (!fs.existsSync(setupScript)) {
+      reject(new Error('Setup script not found. Please ensure tools/setup_speechbrain_env.sh exists.'));
+      return;
+    }
+    
+    const setup = spawn('bash', [setupScript], { 
+      shell: false,
       stdio: 'inherit'
     });
-    install.on('close', (code) => {
+    
+    setup.on('close', (code) => {
       if (code === 0) {
-        console.log('[SpeechBrain] SpeechBrain installed successfully');
+        console.log('[SpeechBrain] Environment setup complete!');
         resolve();
       } else {
-        reject(new Error('Failed to install SpeechBrain'));
+        reject(new Error('Failed to setup SpeechBrain environment'));
       }
     });
   });
@@ -40,11 +62,10 @@ function installSpeechBrain() {
 
 // Separate speakers using SpeechBrain
 async function separateSpeakers(inputPath, outputDir, options = {}) {
-  // Check if SpeechBrain is installed
+  // Check if SpeechBrain environment is set up
   const isInstalled = await checkSpeechBrain();
   if (!isInstalled) {
-    console.log('[SpeechBrain] Installing SpeechBrain...');
-    await installSpeechBrain();
+    await setupEnvironment();
   }
 
   // Validate input file
@@ -104,10 +125,11 @@ print("[SpeechBrain] Done!")
   console.log('[SpeechBrain] Input:', inputPath);
   console.log('[SpeechBrain] Output:', outputDir);
   console.log('[SpeechBrain] Device:', device);
+  console.log('[SpeechBrain] Using venv:', VENV_PYTHON);
 
   return new Promise((resolve, reject) => {
-    const proc = spawn('python3', args, { 
-      shell: true,
+    const proc = spawn(VENV_PYTHON, args, { 
+      shell: false,
       stdio: 'inherit'
     });
 
