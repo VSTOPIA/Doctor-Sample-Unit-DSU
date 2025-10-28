@@ -4,15 +4,16 @@ Doctor Sample Unit is a Max for Live device by Ostin Solo for capturing audio, s
 
 ## Overview
 - Capture/download audio (YouTube and more) via yt-dlp + FFmpeg
-- Separate stems with Demucs locally or on Google Colab GPU
+- Separate stems with Demucs locally or on Google Colab/Kaggle GPU or Hugging Face Spaces
+- Remove silence from vocals/stems with auto-editor for cleaner samples
 - Integrated Max interface to submit jobs and monitor progress
 - Results saved into your session or Drive folder
 
 ## Technology Stack
 - Max for Live + Node for Max
-- Python + Demucs
-- Google Colab + Drive (optional GPU)
-- FFmpeg / yt-dlp
+- Python + Demucs + Spleeter
+- Google Colab + Kaggle + Hugging Face Spaces (GPU processing)
+- FFmpeg / yt-dlp / auto-editor
 
 📘 Colab Quickstart (one click)
 
@@ -241,9 +242,42 @@ drive.mount('/content/drive')
 ```
 3. Submit a job by writing WAV + JSON into `jobs/` on your desktop Google Drive. The watcher writes stems to `out/<jobId>/`.
 
+## Complete Workflow Example
+
+Here's a full end-to-end example: Download YouTube audio → Separate vocals with Demucs → Remove silence:
+
+```bash
+# 1. Download YouTube audio
+./yt-dlp_macos --cookies-from-browser chrome -x --audio-format wav \
+  -o "$HOME/Documents/doctorsampleunit_DSU/Downloads/%(id)s.%(ext)s" \
+  'https://www.youtube.com/watch?v=VIDEO_ID'
+
+# 2. Separate vocals using Hugging Face Space
+curl -fL -X POST \
+  --form "file=@$HOME/Documents/doctorsampleunit_DSU/Downloads/VIDEO_ID.wav;type=audio/wav" \
+  --form "engine=demucs" \
+  --form "model=htdemucs_ft" \
+  --form "two_stems=vocals" \
+  --form "jobs=4" \
+  https://vstopia-dsu.hf.space/separate \
+  -o "$HOME/Documents/doctorsampleunit_DSU/Output/VIDEO_ID_stems.zip"
+
+# 3. Extract vocals from zip
+unzip -o "$HOME/Documents/doctorsampleunit_DSU/Output/VIDEO_ID_stems.zip" \
+  -d "$HOME/Documents/doctorsampleunit_DSU/Output/"
+
+# 4. Remove silence from vocals
+node code/silence_remover.js \
+  "$HOME/Documents/doctorsampleunit_DSU/Output/VIDEO_ID_vocals.wav" \
+  "$HOME/Documents/doctorsampleunit_DSU/Output/VIDEO_ID_vocals_clean.wav" \
+  --margin 0.1s
+```
+
+Result: Clean vocal sample ready for Ableton Live!
+
 ## Legal
 For educational/personal use only. Respect copyright and platform terms.
 
 ## Credits
 - Concept & Development: Ostin Solo
-- Demucs (FAIR), yt-dlp, FFmpeg
+- Demucs (FAIR), Spleeter (Deezer), yt-dlp, FFmpeg, auto-editor
