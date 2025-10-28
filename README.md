@@ -302,7 +302,7 @@ unzip -o "$HOME/Documents/doctorsampleunit_DSU/Output/INTERVIEW_ID_stems.zip" \
 
 Result: Clean speech vocals ready for GPT-SoVITS training!
 
-### Workflow 3: Voice Cloning / TTS - Multiple Speakers (2-5 speakers)
+### Workflow 3: Voice Cloning / TTS - Multiple Speakers (2+ speakers)
 For separating individual speakers from interviews, podcasts, or conversations:
 
 ```bash
@@ -317,22 +317,18 @@ node code/silence_remover.js \
   "$HOME/Documents/doctorsampleunit_DSU/Downloads/PODCAST_ID_no_silence.wav" \
   --margin 0.1s
 
-# 3. Separate speakers using SVoice (Facebook Research)
-node code/speaker_separator.js \
+# 3. Separate speakers using SpeechBrain (recommended)
+node code/speechbrain_separator.js \
   "$HOME/Documents/doctorsampleunit_DSU/Downloads/PODCAST_ID_no_silence.wav" \
   "$HOME/Documents/doctorsampleunit_DSU/Output/PODCAST_ID_speakers/" \
-  --device mps
+  --device cpu
 
-# Output: s1.wav, s2.wav, ... (one file per speaker)
+# Output: speaker_1.wav, speaker_2.wav, ... (one file per speaker)
 ```
 
 Result: Individual speaker files ready for GPT-SoVITS training!
 
-**Note**: [SVoice](https://github.com/facebookresearch/svoice) achieves state-of-the-art performance:
-- 2 speakers: 20.1 dB SI-SNRi
-- 3 speakers: 16.9 dB SI-SNRi  
-- 4 speakers: 12.9 dB SI-SNRi
-- 5 speakers: 10.6 dB SI-SNRi
+**Note**: [SpeechBrain](https://github.com/speechbrain/speechbrain) is actively maintained (10.6k stars) and uses pre-trained Sepformer models from HuggingFace for state-of-the-art speaker separation.
 
 ## Legal
 For educational/personal use only. Respect copyright and platform terms.
