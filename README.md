@@ -4,8 +4,9 @@ Doctor Sample Unit is a Max for Live device by Ostin Solo for capturing audio, s
 
 ## Overview
 - Capture/download audio (YouTube and more) via yt-dlp + FFmpeg
-- Separate stems with Demucs locally or on Google Colab/Kaggle GPU or Hugging Face Spaces
-- Remove silence from vocals/stems with auto-editor for cleaner samples
+- **Music Production**: Separate stems with Demucs (vocals, drums, bass, guitar, piano, other) for sampling/remixing
+- **Voice Cloning**: Remove silence first, then isolate vocals for clean speech samples (GPT-SoVITS training)
+- Process locally or on Google Colab/Kaggle GPU or Hugging Face Spaces
 - Integrated Max interface to submit jobs and monitor progress
 - Results saved into your session or Drive folder
 
@@ -242,9 +243,10 @@ drive.mount('/content/drive')
 ```
 3. Submit a job by writing WAV + JSON into `jobs/` on your desktop Google Drive. The watcher writes stems to `out/<jobId>/`.
 
-## Complete Workflow Example
+## Workflow Examples
 
-Here's a full end-to-end example: Download YouTube audio → Separate vocals with Demucs → Remove silence:
+### Workflow 1: Music Production (Stem Isolation Only)
+For sampling and remixing in Ableton Live:
 
 ```bash
 # 1. Download YouTube audio
@@ -252,28 +254,53 @@ Here's a full end-to-end example: Download YouTube audio → Separate vocals wit
   -o "$HOME/Documents/doctorsampleunit_DSU/Downloads/%(id)s.%(ext)s" \
   'https://www.youtube.com/watch?v=VIDEO_ID'
 
-# 2. Separate vocals using Hugging Face Space
+# 2. Separate stems using Hugging Face Space
 curl -fL -X POST \
   --form "file=@$HOME/Documents/doctorsampleunit_DSU/Downloads/VIDEO_ID.wav;type=audio/wav" \
+  --form "engine=demucs" \
+  --form "model=htdemucs_6s" \
+  --form "jobs=4" \
+  https://vstopia-dsu.hf.space/separate \
+  -o "$HOME/Documents/doctorsampleunit_DSU/Output/VIDEO_ID_stems.zip"
+
+# 3. Extract all stems (vocals, drums, bass, guitar, piano, other)
+unzip -o "$HOME/Documents/doctorsampleunit_DSU/Output/VIDEO_ID_stems.zip" \
+  -d "$HOME/Documents/doctorsampleunit_DSU/Output/"
+```
+
+Result: 6 isolated stems ready for Ableton Live!
+
+### Workflow 2: Voice Cloning / TTS (Speech Processing for GPT-SoVITS)
+For preparing clean speech samples for voice cloning:
+
+```bash
+# 1. Download speech/interview audio
+./yt-dlp_macos --cookies-from-browser chrome -x --audio-format wav \
+  -o "$HOME/Documents/doctorsampleunit_DSU/Downloads/%(id)s.%(ext)s" \
+  'https://www.youtube.com/watch?v=INTERVIEW_ID'
+
+# 2. Remove silence FIRST (saves GPU time and improves isolation quality)
+node code/silence_remover.js \
+  "$HOME/Documents/doctorsampleunit_DSU/Downloads/INTERVIEW_ID.wav" \
+  "$HOME/Documents/doctorsampleunit_DSU/Downloads/INTERVIEW_ID_no_silence.wav" \
+  --margin 0.1s
+
+# 3. Isolate vocals from the trimmed audio
+curl -fL -X POST \
+  --form "file=@$HOME/Documents/doctorsampleunit_DSU/Downloads/INTERVIEW_ID_no_silence.wav;type=audio/wav" \
   --form "engine=demucs" \
   --form "model=htdemucs_ft" \
   --form "two_stems=vocals" \
   --form "jobs=4" \
   https://vstopia-dsu.hf.space/separate \
-  -o "$HOME/Documents/doctorsampleunit_DSU/Output/VIDEO_ID_stems.zip"
+  -o "$HOME/Documents/doctorsampleunit_DSU/Output/INTERVIEW_ID_stems.zip"
 
-# 3. Extract vocals from zip
-unzip -o "$HOME/Documents/doctorsampleunit_DSU/Output/VIDEO_ID_stems.zip" \
+# 4. Extract clean vocals
+unzip -o "$HOME/Documents/doctorsampleunit_DSU/Output/INTERVIEW_ID_stems.zip" \
   -d "$HOME/Documents/doctorsampleunit_DSU/Output/"
-
-# 4. Remove silence from vocals
-node code/silence_remover.js \
-  "$HOME/Documents/doctorsampleunit_DSU/Output/VIDEO_ID_vocals.wav" \
-  "$HOME/Documents/doctorsampleunit_DSU/Output/VIDEO_ID_vocals_clean.wav" \
-  --margin 0.1s
 ```
 
-Result: Clean vocal sample ready for Ableton Live!
+Result: Clean speech vocals ready for GPT-SoVITS training!
 
 ## Legal
 For educational/personal use only. Respect copyright and platform terms.
