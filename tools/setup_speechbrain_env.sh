@@ -54,7 +54,7 @@ pip install speechbrain==1.0.3
 
 echo ""
 echo "Installing additional dependencies..."
-pip install huggingface_hub
+pip install huggingface_hub requests
 
 # Verify installation
 echo ""

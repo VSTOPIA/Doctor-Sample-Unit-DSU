@@ -208,5 +208,5 @@ Output files will be named: speaker_1.wav, speaker_2.wav, etc.
     });
 }
 
-module.exports = { separateSpeakers, checkSpeechBrain, installSpeechBrain };
+module.exports = { separateSpeakers, checkSpeechBrain, setupEnvironment };
 
